@@ -1,12 +1,9 @@
 /*
 Copyright IBM Corp 2016 All Rights Reserved.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
 		 http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -58,9 +55,6 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	} else if function == "write" {
 		return t.write(stub, args)
 	}
-	else if function == "changeOwner" {
-		return t.write(stub, args)
-	}
 	fmt.Println("invoke did not find func: " + function)
 
 	return nil, errors.New("Received unknown function invocation: " + function)
@@ -92,24 +86,6 @@ func (t *SimpleChaincode) write(stub shim.ChaincodeStubInterface, args []string)
 	key = args[0] //rename for funsies
 	value = args[1]
 	err = stub.PutState(key, []byte(value)) //write the variable into the chaincode state
-	if err != nil {
-		return nil, err
-	}
-	return nil, nil
-}
-
-func (t *SimpleChaincode) changeOwner(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	var asset, newOwner string
-	var err error
-	fmt.Println("running write()")
-
-	if len(args) != 2 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 2. name of the key and value to set")
-	}
-
-	asset = args[0] //rename for funsies
-	newOwner = args[1]
-	err = stub.PutState(asset, []byte(newOwner)) //write the variable into the chaincode state
 	if err != nil {
 		return nil, err
 	}
