@@ -95,7 +95,6 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 
 func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	var key, jsonResp string
-	var err error
 
 	if len(args) != 1 {
 		return nil, errors.New("Incorrect number of arguments. Expecting name of the key to query")
@@ -157,9 +156,9 @@ func (t *SimpleChaincode) addUser(stub shim.ChaincodeStubInterface, args []strin
 	var err error
 	var userLogin, userPassword, userHash string
 
-	userLogin = args[1]
-	userPassword = args[2]
-	userHash = args[3]
+	userLogin = args[0]
+	userPassword = args[1]
+	userHash = args[2]
 
 	usersLengthAsBytes, err := stub.GetState("usersLength")
 	if err != nil {
