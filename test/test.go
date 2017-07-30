@@ -133,6 +133,7 @@ func (t *SimpleChaincode) addProduct(stub shim.ChaincodeStubInterface, args []st
 
 	productAsBytes, err := json.Marshal(product)
 	productsLength := string(productsLengthAsBytes)
+	fmt.Println("currentCountAsString : " + productsLength)
 	err = stub.PutState("product"+productsLength, productAsBytes)
 	if err != nil {
 		return nil, err
