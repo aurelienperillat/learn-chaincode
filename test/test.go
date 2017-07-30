@@ -13,12 +13,22 @@ type SimpleChaincode struct {
 }
 
 type Product struct {
-	Ref         string `json:"ref"`
-	Description string `json:"description"`
-	Price       int    `json:"price"`
-	Quantity    int    `json:"quantity"`
-	Critical    int    `json:"critical"`
-	Provision   int    `json:"provision"`
+	Ref         string  `json:"ref"`
+	Description string  `json:"description"`
+	Price       float64 `json:"price"`
+	Quantity    int     `json:"quantity"`
+	Critical    int     `json:"critical"`
+	Provision   int     `json:"provision"`
+}
+
+type Order struct {
+	Ref        string    `json:"ref"`
+	UserHash   string    `json:"user"`
+	Products   []Product `json:"products"`
+	Quantities []int     `json:"quantities"`
+	TotalPrice float64   `json:"totalprice"`
+	TrackingID string    `json:"trackingid"`
+	State      int       `json:"state"`
 }
 
 func main() {
@@ -34,10 +44,19 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 		return nil, errors.New("Incorrect number of arguments. Expecting 0")
 	}
 
-	var productsLength string
-	productsLength = "0"
+	var err error
 
-	err := stub.PutState("productsLength", []byte(productsLength))
+	err = stub.PutState("productsLength", []byte("0"))
+	if err != nil {
+		return nil, err
+	}
+
+	err = stub.PutState("ordersLength", []byte("0"))
+	if err != nil {
+		return nil, err
+	}
+
+	err = stub.PutState("usersLength", []byte("0"))
 	if err != nil {
 		return nil, err
 	}
@@ -51,6 +70,10 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 
 	if function == "addProduct" {
 		return t.addProduct(stub, args)
+	} else if function == "addOrder" {
+		return t.addOrder(stub, args)
+	} else if function == "addUser" {
+		return t.addUser(stub, args)
 	}
 	fmt.Println("invoke did not find func: " + function)
 
@@ -92,6 +115,7 @@ func (t *SimpleChaincode) addProduct(stub shim.ChaincodeStubInterface, args []st
 	if len(args) != 5 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 5")
 	}
+
 	var err error
 	var product Product
 
@@ -101,16 +125,110 @@ func (t *SimpleChaincode) addProduct(stub shim.ChaincodeStubInterface, args []st
 		return nil, errors.New(jsonResp)
 	}
 
-	producLength := string(productsLengthAsBytes)
 	product.Ref = args[0]
 	product.Description = args[1]
-	product.Price, err = strconv.Atoi(args[2])
+	product.Price, err = strconv.ParseFloat(args[2], 64)
 	product.Quantity, err = strconv.Atoi(args[3])
 	product.Critical, err = strconv.Atoi(args[4])
 	product.Provision = 0
 
 	productAsBytes, err := json.Marshal(product)
-	err = stub.PutState("product"+producLength, productAsBytes)
+	productsLength := string(productsLengthAsBytes)
+	err = stub.PutState("product"+productsLength, productAsBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	count, err := strconv.Atoi(productsLength)
+	count++
+	err = stub.PutState("productsLength", []byte(string(count)))
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+func (t *SimpleChaincode) addUser(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	if len(args) != 3 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 3")
+	}
+
+	var err error
+	var userLogin, userPassword, userHash string
+
+	userLogin = args[1]
+	userPassword = args[2]
+	userHash = args[3]
+
+	usersLengthAsBytes, err := stub.GetState("usersLength")
+	if err != nil {
+		jsonResp := "{\"Error\":\"Failed to get state for usersLength\"}"
+		return nil, errors.New(jsonResp)
+	}
+
+	err = stub.PutState(userLogin+"@"+userPassword, []byte(string(userHash)))
+	if err != nil {
+		return nil, err
+	}
+
+	usersLength := string(usersLengthAsBytes)
+	count, err := strconv.Atoi(usersLength)
+	count++
+	err = stub.PutState("usersLength", []byte(string(count)))
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+func (t *SimpleChaincode) addOrder(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	if len(args) != 4 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 4")
+	}
+
+	var err error
+	var order Order
+
+	userHashAsBytes, err := stub.GetState(args[0])
+	if err != nil {
+		jsonResp := "{\"Error\":\"Failed to get state for " + args[0] + "\"}"
+		return nil, errors.New(jsonResp)
+	}
+
+	ordersLengthAsBytes, err := stub.GetState("ordersLength")
+	if err != nil {
+		jsonResp := "{\"Error\":\"Failed to get state for ordersLength\"}"
+		return nil, errors.New(jsonResp)
+	}
+	ordersLength := string(ordersLengthAsBytes)
+	count, err := strconv.Atoi(ordersLength)
+	count++
+
+	order.Ref = string(count)
+	order.UserHash = string(userHashAsBytes)
+	err = json.Unmarshal([]byte(args[1]), &order.Products)
+	if err != nil {
+		jsonResp := "{\"Error\":\"Failed to unmarshal for :\n" + args[1] + "\"}"
+		return nil, errors.New(jsonResp)
+	}
+	err = json.Unmarshal([]byte(args[2]), &order.Quantities)
+	if err != nil {
+		jsonResp := "{\"Error\":\"Failed to unmarshal for :\n" + args[3] + "\"}"
+		return nil, errors.New(jsonResp)
+	}
+	order.TotalPrice, err = strconv.ParseFloat(args[3], 64)
+	order.TrackingID = ""
+	order.State = 1
+
+	ordersAsBytes, err := json.Marshal(order)
+	err = stub.PutState("order"+ordersLength, ordersAsBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	err = stub.PutState("ordersLength", []byte(string(count)))
 	if err != nil {
 		return nil, err
 	}
