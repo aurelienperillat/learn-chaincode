@@ -179,7 +179,7 @@ func (t *SimpleChaincode) addUser(stub shim.ChaincodeStubInterface, args []strin
 	usersLength := string(usersLengthAsBytes)
 	count, err := strconv.Atoi(usersLength)
 	count++
-	err = stub.PutState("usersLength", []byte(string(count)))
+	err = stub.PutState("usersLength", []byte(strconv.Itoa(count)))
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +210,7 @@ func (t *SimpleChaincode) addOrder(stub shim.ChaincodeStubInterface, args []stri
 	count, err := strconv.Atoi(ordersLength)
 	count++
 
-	order.Ref = string(count)
+	order.Ref = strconv.Itoa(count)
 	order.UserHash = string(userHashAsBytes)
 	err = json.Unmarshal([]byte(args[1]), &order.Products)
 	if err != nil {
@@ -232,7 +232,7 @@ func (t *SimpleChaincode) addOrder(stub shim.ChaincodeStubInterface, args []stri
 		return nil, err
 	}
 
-	err = stub.PutState("ordersLength", []byte(string(count)))
+	err = stub.PutState("ordersLength", []byte(strconv.Itoa(count)))
 	if err != nil {
 		return nil, err
 	}
