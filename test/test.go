@@ -13,12 +13,12 @@ type SimpleChaincode struct {
 }
 
 type Product struct {
-	Ref         string `json:"ref"`
-	Description string `json:"description"`
-	Price       string `json:"price"`
-	Quantity    int    `json:"quantity"`
-	Critical    int    `json:"critical"`
-	Provision   int    `json:"provision"`
+	Ref         string  `json:"ref"`
+	Description string  `json:"description"`
+	Price       float64 `json:"price"`
+	Quantity    int     `json:"quantity"`
+	Critical    int     `json:"critical"`
+	Provision   int     `json:"provision"`
 }
 
 type Order struct {
@@ -126,7 +126,7 @@ func (t *SimpleChaincode) addProduct(stub shim.ChaincodeStubInterface, args []st
 
 	product.Ref = args[0]
 	product.Description = args[1]
-	product.Price = args[2]
+	product.Price, err = strconv.ParseFloat(args[2], 64)
 	product.Quantity, err = strconv.Atoi(args[3])
 	product.Critical, err = strconv.Atoi(args[4])
 	product.Provision = 0
