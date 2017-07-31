@@ -133,18 +133,13 @@ func (t *SimpleChaincode) addProduct(stub shim.ChaincodeStubInterface, args []st
 
 	productAsBytes, err := json.Marshal(product)
 	productsLength := string(productsLengthAsBytes)
-	fmt.Println("currentCountAsString : " + productsLength)
 	err = stub.PutState("product"+productsLength, productAsBytes)
 	if err != nil {
 		return nil, err
 	}
 
 	count, err := strconv.Atoi(productsLength)
-	fmt.Println("currentCount : ")
-	fmt.Println(count)
 	count++
-	fmt.Println("incrementCount : ")
-	fmt.Println(count)
 	err = stub.PutState("productsLength", []byte(strconv.Itoa(count)))
 	if err != nil {
 		return nil, err
@@ -191,33 +186,55 @@ func (t *SimpleChaincode) addOrder(stub shim.ChaincodeStubInterface, args []stri
 	if len(args) != 4 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 4")
 	}
+	fmt.Println("args[0] : " + args[0])
+	fmt.Println("args[1] : " + args[1])
+	fmt.Println("args[2] : " + args[2])
+	fmt.Println("args[3] : " + args[3])
 
 	var err error
 	var order Order
 
 	userHashAsBytes, err := stub.GetState(args[0])
+	fmt.Println("userHashAsBytes:")
+	fmt.Println(userHashAsBytes)
 	if err != nil {
 		jsonResp := "{\"Error\":\"Failed to get state for " + args[0] + "\"}"
 		return nil, errors.New(jsonResp)
 	}
 
 	ordersLengthAsBytes, err := stub.GetState("ordersLength")
+	fmt.Println("ordersLenghtAsBytes:")
+	fmt.Println(ordersLengthAsBytes)
 	if err != nil {
 		jsonResp := "{\"Error\":\"Failed to get state for ordersLength\"}"
 		return nil, errors.New(jsonResp)
 	}
 	ordersLength := string(ordersLengthAsBytes)
+	fmt.Println("ordersLength:")
+	fmt.Println(ordersLength)
 	count, err := strconv.Atoi(ordersLength)
+	fmt.Println("currenCount:")
+	fmt.Println(count)
 	count++
+	fmt.Println("incrementCount:")
+	fmt.Println(count)
 
 	order.Ref = strconv.Itoa(count)
 	order.UserHash = string(userHashAsBytes)
 	err = json.Unmarshal([]byte(args[1]), &order.Products)
+	fmt.Println("order.Products:")
+	fmt.Println(order.Products)
+	fmt.Println("err unmarshal args[1]:")
+	fmt.Println(err)
 	if err != nil {
 		jsonResp := "{\"Error\":\"Failed to unmarshal for :\n" + args[1] + "\"}"
 		return nil, errors.New(jsonResp)
 	}
 	err = json.Unmarshal([]byte(args[2]), &order.Quantities)
+	fmt.Println("order.Quantities:")
+	fmt.Println(order.Quantities)
+	fmt.Println("err unmarshal args[2]:")
+	fmt.Println(err)
 	if err != nil {
 		jsonResp := "{\"Error\":\"Failed to unmarshal for :\n" + args[3] + "\"}"
 		return nil, errors.New(jsonResp)
@@ -227,7 +244,15 @@ func (t *SimpleChaincode) addOrder(stub shim.ChaincodeStubInterface, args []stri
 	order.State = 1
 
 	ordersAsBytes, err := json.Marshal(order)
+	fmt.Println("ordersAsBytes:")
+	fmt.Println(ordersAsBytes)
+	fmt.Println("err marshal ordersAsBytes:")
+	fmt.Println(err)
 	err = stub.PutState("order"+ordersLength, ordersAsBytes)
+	fmt.Println("key:")
+	fmt.Println("order" + ordersLength)
+	fmt.Println("err putting stat:")
+	fmt.Println(err)
 	if err != nil {
 		return nil, err
 	}
