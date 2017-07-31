@@ -148,6 +148,39 @@ func (t *SimpleChaincode) addProduct(stub shim.ChaincodeStubInterface, args []st
 	return nil, nil
 }
 
+func (t *SimpleChaincode) setProvision(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	if len(args) != 2 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 2")
+	}
+
+	var index, value string
+	var product Product
+
+	index = args[0]
+	value = args[1]
+
+	prouctsAsBytes, err := stub.GetState("product" + index)
+	if err != nil {
+		jsonResp := "{\"Error\":\"Failed to get state for : product" + index + "\"}"
+		return nil, errors.New(jsonResp)
+	}
+
+	err = json.Unmarshal(prouctsAsBytes, &product)
+	if err != nil {
+		jsonResp := "{\"Error\":\"Failed to unmarshal for : product" + index + "\"}"
+		return nil, errors.New(jsonResp)
+	}
+
+	product.Provision, err = strconv.Atoi(value)
+	prouctsAsBytes, err = json.Marshal(product)
+	err = stub.PutState("product"+index, prouctsAsBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
 func (t *SimpleChaincode) addUser(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	if len(args) != 3 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 3")
