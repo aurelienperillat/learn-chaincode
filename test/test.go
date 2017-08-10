@@ -22,13 +22,14 @@ type Product struct {
 }
 
 type Order struct {
-	Ref        string    `json:"ref"`
-	UserHash   string    `json:"user"`
-	Products   []Product `json:"products"`
-	Quantities []int     `json:"quantities"`
-	TotalPrice float64   `json:"totalprice"`
-	TrackingID string    `json:"trackingid"`
-	State      int       `json:"state"`
+	Ref         string    `json:"ref"`
+	ClientHash  string    `json:"clienthash"`
+	CarrierHash string    `json:"carrierhash"`
+	Products    []Product `json:"products"`
+	Quantities  []int     `json:"quantities"`
+	TotalPrice  float64   `json:"totalprice"`
+	TrackingID  string    `json:"trackingid"`
+	State       int       `json:"state"`
 }
 
 func main() {
@@ -73,6 +74,8 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	} else if function == "addOrder" {
 		return t.addOrder(stub, args)
 	} else if function == "addUser" {
+		return t.addUser(stub, args)
+	} else if function == "setProvision" {
 		return t.addUser(stub, args)
 	}
 	fmt.Println("invoke did not find func: " + function)
@@ -170,14 +173,14 @@ func (t *SimpleChaincode) setProvision(stub shim.ChaincodeStubInterface, args []
 		jsonResp := "{\"Error\":\"Failed to unmarshal for : product" + index + "\"}"
 		return nil, errors.New(jsonResp)
 	}
-
+	fmt.Println(product)
 	product.Provision, err = strconv.Atoi(value)
 	prouctsAsBytes, err = json.Marshal(product)
 	err = stub.PutState("product"+index, prouctsAsBytes)
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Println(product)
 	return nil, nil
 }
 
@@ -253,7 +256,7 @@ func (t *SimpleChaincode) addOrder(stub shim.ChaincodeStubInterface, args []stri
 	fmt.Println(count)
 
 	order.Ref = strconv.Itoa(count)
-	order.UserHash = string(userHashAsBytes)
+	order.ClientHash = string(userHashAsBytes)
 	err = json.Unmarshal([]byte(args[1]), &order.Products)
 	fmt.Println("order.Products:")
 	fmt.Println(order.Products)
