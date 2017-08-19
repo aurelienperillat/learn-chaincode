@@ -182,7 +182,7 @@ func (t *SimpleChaincode) getOrderByRef(stub shim.ChaincodeStubInterface, args [
 	fmt.Print("ref: ")
 	fmt.Println(ref)
 
-	ordersLengthAsbytes, err := stub.GetState("orderssLength")
+	ordersLengthAsbytes, err := stub.GetState("ordersLength")
 	fmt.Print("ordersLengthAsBytes: ")
 	fmt.Println(ordersLengthAsbytes)
 	fmt.Println(err)
@@ -279,6 +279,9 @@ func (t *SimpleChaincode) setProvision(stub shim.ChaincodeStubInterface, args []
 	value = args[1]
 
 	productAsBytes, index, err := t.getProductByRef(stub, arguments)
+	if err != nil {
+		return nil, errors.New(err.Error())
+	}
 	fmt.Print("productAsBytes: ")
 	fmt.Println(index)
 	fmt.Println(err)
@@ -348,6 +351,9 @@ func (t *SimpleChaincode) majProduct(stub shim.ChaincodeStubInterface, args []st
 	for i = 0; i < len(productArray); i++ {
 		arguments = append(arguments, productArray[i].Ref)
 		productAsBytes, index, err := t.getProductByRef(stub, arguments)
+		if err != nil {
+			return nil, errors.New(err.Error())
+		}
 		fmt.Print("productAsBytes: ")
 		fmt.Println(index)
 		fmt.Println(err)
@@ -489,6 +495,9 @@ func (t *SimpleChaincode) setTrackingID(stub shim.ChaincodeStubInterface, args [
 	arguments = append(arguments, args[1])
 
 	orderAsBytes, index, err := t.getOrderByRef(stub, arguments)
+	if err != nil {
+		return nil, errors.New(err.Error())
+	}
 	fmt.Print("orderAsBytes: ")
 	fmt.Println(orderAsBytes)
 	fmt.Println(index)
@@ -539,6 +548,9 @@ func (t *SimpleChaincode) setCollis(stub shim.ChaincodeStubInterface, args []str
 	fmt.Println(err)
 
 	orderAsBytes, index, err := t.getOrderByRef(stub, arguments)
+	if err != nil {
+		return nil, errors.New(err.Error())
+	}
 	fmt.Print("orderAsBytes: ")
 	fmt.Println(orderAsBytes)
 	fmt.Println(index)
@@ -585,6 +597,9 @@ func (t *SimpleChaincode) setState(stub shim.ChaincodeStubInterface, args []stri
 	arguments = append(arguments, args[1])
 
 	orderAsBytes, index, err := t.getOrderByRef(stub, arguments)
+	if err != nil {
+		return nil, errors.New(err.Error())
+	}
 	fmt.Print("orderAsBytes: ")
 	fmt.Println(orderAsBytes)
 	fmt.Println(index)
