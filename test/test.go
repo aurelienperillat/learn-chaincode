@@ -84,12 +84,12 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		return t.setProvision(stub, args)
 	} else if function == "majProduct" {
 		return t.majProduct(stub, args)
-	} else if function == "setTrackinID" {
+	} else if function == "setTrackingID" {
 		return t.setTrackingID(stub, args)
 	} else if function == "setState" {
 		return t.setState(stub, args)
 	} else if function == "setCollis" {
-		return t.setTrackingID(stub, args)
+		return t.setCollis(stub, args)
 	}
 	fmt.Println("invoke did not find func: " + function)
 
