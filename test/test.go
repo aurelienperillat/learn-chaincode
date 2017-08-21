@@ -88,8 +88,8 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		return t.setTrackingID(stub, args)
 	} else if function == "setState" {
 		return t.setState(stub, args)
-	} else if function == "setCollis" {
-		return t.setCollis(stub, args)
+	} else if function == "setTransport" {
+		return t.setTransport(stub, args)
 	}
 	fmt.Println("invoke did not find func: " + function)
 
@@ -365,7 +365,7 @@ func (t *SimpleChaincode) majProduct(stub shim.ChaincodeStubInterface, args []st
 
 		if product.Quantity > quantityArray[i] {
 			product.Quantity = product.Quantity - quantityArray[i]
-			fmt.Print("qtfinal:")
+			fmt.Print("qtfinal: ")
 			fmt.Println(product.Quantity)
 
 			productAsBytes, err = json.Marshal(product)
@@ -376,7 +376,7 @@ func (t *SimpleChaincode) majProduct(stub shim.ChaincodeStubInterface, args []st
 			fmt.Print("PutState: ")
 			fmt.Println(err)
 
-			if product.Critical < product.Quantity {
+			if product.Critical > product.Quantity {
 				fmt.Println("Event : commande en cours sur le produit X")
 				var customEvent = "{eventType: 'provisioningOrder', productRef:" + product.Ref + ", quantity:" + strconv.Itoa(product.Provision) + "}"
 				err = stub.SetEvent("evtSender", []byte(customEvent))
@@ -509,6 +509,7 @@ func (t *SimpleChaincode) setTrackingID(stub shim.ChaincodeStubInterface, args [
 	fmt.Println(err)
 
 	order.TrackingID = trackingID
+	order.State = 3
 	fmt.Print("modifiedOrder: ")
 	fmt.Println(order)
 
@@ -524,27 +525,35 @@ func (t *SimpleChaincode) setTrackingID(stub shim.ChaincodeStubInterface, args [
 	return nil, nil
 }
 
-/*******************************Set a collis to an order************************************/
+/*******************************Set a transport infos of an order************************************/
 //args[0] : collis infos
 //args[1] : ref of the order
+//args[3] : key of the carrier
 
-func (t *SimpleChaincode) setCollis(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	if len(args) != 2 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 2")
+func (t *SimpleChaincode) setTransport(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	if len(args) != 3 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 3")
 	}
 
 	fmt.Println("args[0] : " + args[0])
 	fmt.Println("args[1] : " + args[1])
+	fmt.Println("args[2] : " + args[2])
 
 	var collis Collis
+	var carrierKey string
 	var arguments []string
 	var order Order
 
 	arguments = append(arguments, args[1])
+	carrierKey = args[2]
 
 	err := json.Unmarshal([]byte(args[0]), &collis)
 	fmt.Print("collis: ")
 	fmt.Println(collis)
+	fmt.Println(err)
+
+	userHashAsBytes, err := stub.GetState(carrierKey)
+	fmt.Print("userHashAsBytes: ")
 	fmt.Println(err)
 
 	orderAsBytes, index, err := t.getOrderByRef(stub, arguments)
@@ -562,6 +571,7 @@ func (t *SimpleChaincode) setCollis(stub shim.ChaincodeStubInterface, args []str
 	fmt.Println(err)
 
 	order.Collis = collis
+	order.CarrierHash = string(userHashAsBytes)
 	fmt.Print("modifiedOrder: ")
 	fmt.Println(order)
 
