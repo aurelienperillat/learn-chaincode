@@ -311,7 +311,7 @@ func (t *SimpleChaincode) setProvision(stub shim.ChaincodeStubInterface, args []
 }
 
 /************Maintain stock state and deliver events when critical point is reached*********************/
-//args[0] : product array
+//args[0] : product ref array
 //args[1] : quantity array
 //args[2] : ref of the order
 
@@ -325,7 +325,7 @@ func (t *SimpleChaincode) majProduct(stub shim.ChaincodeStubInterface, args []st
 	var orderRef string
 	var product Product
 	var arguments []string
-	var productArray []Product
+	var refArray []string
 	var quantityArray []string
 
 	fmt.Println("args[0] : " + args[0])
@@ -334,9 +334,9 @@ func (t *SimpleChaincode) majProduct(stub shim.ChaincodeStubInterface, args []st
 
 	orderRef = args[2]
 
-	err = json.Unmarshal([]byte(args[0]), &productArray)
-	fmt.Print("productArray:")
-	fmt.Println(productArray)
+	err = json.Unmarshal([]byte(args[0]), &refArray)
+	fmt.Print("refArray:")
+	fmt.Println(refArray)
 	fmt.Println(err)
 
 	err = json.Unmarshal([]byte(args[1]), &quantityArray)
@@ -350,8 +350,8 @@ func (t *SimpleChaincode) majProduct(stub shim.ChaincodeStubInterface, args []st
 	fmt.Println(ordersLength)
 	fmt.Println(err)
 
-	for i = 0; i < len(productArray); i++ {
-		arguments = append(arguments, productArray[i].Ref)
+	for i = 0; i < len(refArray); i++ {
+		arguments = append(arguments, refArray[i])
 		productAsBytes, index, err := t.getProductByRef(stub, arguments)
 		if err != nil {
 			return nil, errors.New(err.Error())
