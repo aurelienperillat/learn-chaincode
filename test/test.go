@@ -13,29 +13,31 @@ type SimpleChaincode struct {
 }
 
 type Collis struct {
-	Dimension string  `json:"dimension"`
-	Poids     float64 `json:"poids"`
+	Dimension string `json:"dimension"`
+	Poids     string `json:"poids"`
 }
 
 type Product struct {
-	Ref         string  `json:"ref"`
-	Description string  `json:"description"`
-	Price       float64 `json:"price"`
-	Quantity    int     `json:"quantity"`
-	Critical    int     `json:"critical"`
-	Provision   int     `json:"provision"`
+	ID          string `json:"_id"`
+	Ref         string `json:"ref"`
+	Description string `json:"description"`
+	Price       string `json:"price"`
+	Quantity    string `json:"quantity"`
+	Critical    string `json:"critical"`
+	Provision   string `json:"provision"`
 }
 
 type Order struct {
+	ID          string    `json:"_id"`
 	Ref         string    `json:"ref"`
 	ClientHash  string    `json:"clienthash"`
 	CarrierHash string    `json:"carrierhash"`
 	Products    []Product `json:"products"`
-	Quantities  []int     `json:"quantities"`
-	TotalPrice  float64   `json:"totalprice"`
+	Quantities  []string  `json:"quantities"`
+	TotalPrice  string    `json:"totalprice"`
 	Collis      Collis    `json:"collis"`
 	TrackingID  string    `json:"trackingid"`
-	State       int       `json:"state"`
+	State       string    `json:"state"`
 }
 
 func main() {
@@ -236,10 +238,10 @@ func (t *SimpleChaincode) addProduct(stub shim.ChaincodeStubInterface, args []st
 
 	product.Ref = args[0]
 	product.Description = args[1]
-	product.Price, err = strconv.ParseFloat(args[2], 64)
-	product.Quantity, err = strconv.Atoi(args[3])
-	product.Critical, err = strconv.Atoi(args[4])
-	product.Provision = 0
+	product.Price = args[2]
+	product.Quantity = args[3]
+	product.Critical = args[4]
+	product.Provision = "0"
 
 	productAsBytes, err := json.Marshal(product)
 	fmt.Print("productAsBytes: ")
@@ -291,7 +293,7 @@ func (t *SimpleChaincode) setProvision(stub shim.ChaincodeStubInterface, args []
 	fmt.Println(product)
 	fmt.Println(err)
 
-	product.Provision, err = strconv.Atoi(value)
+	product.Provision = value
 	fmt.Print("product: ")
 	fmt.Println(product)
 	fmt.Println(err)
@@ -324,7 +326,7 @@ func (t *SimpleChaincode) majProduct(stub shim.ChaincodeStubInterface, args []st
 	var product Product
 	var arguments []string
 	var productArray []Product
-	var quantityArray []int
+	var quantityArray []string
 
 	fmt.Println("args[0] : " + args[0])
 	fmt.Println("args[1] : " + args[1])
@@ -363,8 +365,11 @@ func (t *SimpleChaincode) majProduct(stub shim.ChaincodeStubInterface, args []st
 		fmt.Println(product)
 		fmt.Println(err)
 
-		if product.Quantity > quantityArray[i] {
-			product.Quantity = product.Quantity - quantityArray[i]
+		qtproduct, err := strconv.Atoi(product.Quantity)
+		qtasked, err := strconv.Atoi(quantityArray[i])
+
+		if qtproduct > qtasked {
+			product.Quantity = strconv.Itoa(qtproduct - qtasked)
 			fmt.Print("qtfinal: ")
 			fmt.Println(product.Quantity)
 
@@ -378,7 +383,7 @@ func (t *SimpleChaincode) majProduct(stub shim.ChaincodeStubInterface, args []st
 
 			if product.Critical > product.Quantity {
 				fmt.Println("Event : commande en cours sur le produit X")
-				var customEvent = "{eventType: 'provisioningOrder', productRef:" + product.Ref + ", quantity:" + strconv.Itoa(product.Provision) + "}"
+				var customEvent = "{eventType: 'provisioningOrder', productRef:" + product.Ref + ", quantity:" + product.Provision + "}"
 				err = stub.SetEvent("evtSender", []byte(customEvent))
 				fmt.Print("Event: ")
 				fmt.Println(err)
@@ -417,7 +422,7 @@ func (t *SimpleChaincode) addOrder(stub shim.ChaincodeStubInterface, args []stri
 	var collis Collis
 
 	collis.Dimension = ""
-	collis.Poids = -1
+	collis.Poids = ""
 
 	userHashAsBytes, err := stub.GetState(args[0])
 	fmt.Println("userHashAsBytes:")
@@ -453,10 +458,10 @@ func (t *SimpleChaincode) addOrder(stub shim.ChaincodeStubInterface, args []stri
 	fmt.Println("err unmarshal args[2]:")
 	fmt.Println(err)
 
-	order.TotalPrice, err = strconv.ParseFloat(args[3], 64)
+	order.TotalPrice = args[3]
 	order.Collis = collis
 	order.TrackingID = ""
-	order.State = 1
+	order.State = "1"
 
 	ordersAsBytes, err := json.Marshal(order)
 	fmt.Println("err marshal ordersAsBytes:")
@@ -509,7 +514,7 @@ func (t *SimpleChaincode) setTrackingID(stub shim.ChaincodeStubInterface, args [
 	fmt.Println(err)
 
 	order.TrackingID = trackingID
-	order.State = 3
+	order.State = "3"
 	fmt.Print("modifiedOrder: ")
 	fmt.Println(order)
 
@@ -599,11 +604,11 @@ func (t *SimpleChaincode) setState(stub shim.ChaincodeStubInterface, args []stri
 	fmt.Println("args[0] : " + args[0])
 	fmt.Println("args[1] : " + args[1])
 
-	var state int
+	var state string
 	var arguments []string
 	var order Order
 
-	state, err := strconv.Atoi(args[0])
+	state = args[0]
 	arguments = append(arguments, args[1])
 
 	orderAsBytes, index, err := t.getOrderByRef(stub, arguments)
