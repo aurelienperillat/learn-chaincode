@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
+	"github.com/hyperledger/fabric/protos/peer"
 )
 
 type SimpleChaincode struct {
@@ -49,9 +50,10 @@ func main() {
 
 /***************************Init resets all the things********************************/
 
-func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) peer.Response {
+	args := stub.GetStringArgs()
 	if len(args) != 0 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 0")
+		return shim.Error("Incorrect number of arguments. Expecting 0")
 	}
 
 	var err error
@@ -68,12 +70,13 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 	fmt.Print("PutState: ")
 	fmt.Println(err)
 
-	return nil, nil
+	return shim.Success(nil)
 }
 
 /***************************Invoke is our entry point to invoke a chaincode function**************************/
 
-func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
+	function, args := stub.GetFunctionAndParameters()	
 	fmt.Println("invoke is running " + function)
 
 	if function == "addProduct" {
@@ -92,32 +95,20 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		return t.setState(stub, args)
 	} else if function == "setTransport" {
 		return t.setTransport(stub, args)
+	} else if function == "read" { //read a variable
+		return t.read(stub, args)
 	}
 	fmt.Println("invoke did not find func: " + function)
 
-	return nil, errors.New("Received unknown function invocation: " + function)
-}
-
-/*********************************Query is our entry point for queries*********************************/
-
-func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	fmt.Println("query is running " + function)
-
-	// Handle different functions
-	if function == "read" { //read a variable
-		return t.read(stub, args)
-	}
-	fmt.Println("query did not find func: " + function)
-
-	return nil, errors.New("Received unknown function query: " + function)
+	return shim.Error("Received unknown function invocation")
 }
 
 /*********************************Read and return anything from state by key*****************************************/
 //args[0] : the key to use to retrieve data
 
-func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	if len(args) != 1 {
-		return nil, errors.New("Incorrect number of arguments. Expecting name of the key to query")
+		return shim.Error("Incorrect number of arguments. Expecting name of the key to query")
 	}
 
 	key := args[0]
@@ -126,7 +117,7 @@ func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) 
 	fmt.Println(valAsbytes)
 	fmt.Println(err)
 
-	return valAsbytes, nil
+	return shim.Success(valAsbytes)
 }
 
 /***********************************Read and return a product by ref*****************************************/
@@ -216,9 +207,9 @@ func (t *SimpleChaincode) getOrderByRef(stub shim.ChaincodeStubInterface, args [
 //args[3] : quantity of the product in stock
 //args[4] : critical quantity of the product in stock
 
-func (t *SimpleChaincode) addProduct(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) addProduct(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	if len(args) != 5 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 5")
+		return shim.Error("Incorrect number of arguments. Expecting 5")
 	}
 
 	var err error
@@ -258,16 +249,16 @@ func (t *SimpleChaincode) addProduct(stub shim.ChaincodeStubInterface, args []st
 	fmt.Print("PutState: ")
 	fmt.Println(err)
 
-	return nil, nil
+	return shim.Success(nil)
 }
 
 /*********************************Set a provisioning rule to a product*********************************/
 //args[0] : ref of the product
 //args[1] : provisioning number
 
-func (t *SimpleChaincode) setProvision(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) setProvision(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	if len(args) != 2 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 2")
+		return shim.Error("Incorrect number of arguments. Expecting 2")
 	}
 
 	var value string
@@ -282,7 +273,7 @@ func (t *SimpleChaincode) setProvision(stub shim.ChaincodeStubInterface, args []
 
 	productAsBytes, index, err := t.getProductByRef(stub, arguments)
 	if err != nil {
-		return nil, errors.New(err.Error())
+		return shim.Error(err.Error())
 	}
 	fmt.Print("productAsBytes: ")
 	fmt.Println(index)
@@ -307,7 +298,7 @@ func (t *SimpleChaincode) setProvision(stub shim.ChaincodeStubInterface, args []
 	fmt.Print("PutState: ")
 	fmt.Println(err)
 
-	return nil, nil
+	return shim.Success(nil)
 }
 
 /************Maintain stock state and deliver events when critical point is reached*********************/
@@ -315,9 +306,9 @@ func (t *SimpleChaincode) setProvision(stub shim.ChaincodeStubInterface, args []
 //args[1] : quantity array
 //args[2] : ref of the order
 
-func (t *SimpleChaincode) majProduct(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) majProduct(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	if len(args) != 3 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 2")
+		return shim.Error("Incorrect number of arguments. Expecting 2")
 	}
 
 	var i int
@@ -354,7 +345,7 @@ func (t *SimpleChaincode) majProduct(stub shim.ChaincodeStubInterface, args []st
 		arguments = append(arguments, refArray[i])
 		productAsBytes, index, err := t.getProductByRef(stub, arguments)
 		if err != nil {
-			return nil, errors.New(err.Error())
+			return shim.Error(err.Error())
 		}
 		fmt.Print("productAsBytes: ")
 		fmt.Println(index)
@@ -390,7 +381,7 @@ func (t *SimpleChaincode) majProduct(stub shim.ChaincodeStubInterface, args []st
 			}
 
 		} else {
-			return nil, errors.New("Insufficient stock")
+			return shim.Error("Insufficient stock")
 		}
 
 		arguments = nil
@@ -407,9 +398,9 @@ func (t *SimpleChaincode) majProduct(stub shim.ChaincodeStubInterface, args []st
 //args[3] : total price of the order
 //args[4] : ref of the order
 
-func (t *SimpleChaincode) addOrder(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) addOrder(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	if len(args) != 5 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 5")
+		return shim.Error("Incorrect number of arguments. Expecting 5")
 	}
 	fmt.Println("args[0] : " + args[0])
 	fmt.Println("args[1] : " + args[1])
@@ -477,16 +468,16 @@ func (t *SimpleChaincode) addOrder(stub shim.ChaincodeStubInterface, args []stri
 	fmt.Print("PutState: ")
 	fmt.Println(err)
 
-	return nil, nil
+	return shim.Success(nil)
 }
 
 /*****************************Set a trackingID to an order*****************************************/
 //args[0] : trackingID value
 //args[1] : ref of the order
 
-func (t *SimpleChaincode) setTrackingID(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) setTrackingID(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	if len(args) != 2 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 2")
+		return shim.Error("Incorrect number of arguments. Expecting 2")
 	}
 
 	fmt.Println("args[0] : " + args[0])
@@ -501,7 +492,7 @@ func (t *SimpleChaincode) setTrackingID(stub shim.ChaincodeStubInterface, args [
 
 	orderAsBytes, index, err := t.getOrderByRef(stub, arguments)
 	if err != nil {
-		return nil, errors.New(err.Error())
+		return shim.Error(err.Error())
 	}
 	fmt.Print("orderAsBytes: ")
 	fmt.Println(orderAsBytes)
@@ -527,7 +518,7 @@ func (t *SimpleChaincode) setTrackingID(stub shim.ChaincodeStubInterface, args [
 	fmt.Print("PutState: ")
 	fmt.Println(err)
 
-	return nil, nil
+	return shim.Success(nil)
 }
 
 /*******************************Set a transport infos of an order************************************/
@@ -535,9 +526,9 @@ func (t *SimpleChaincode) setTrackingID(stub shim.ChaincodeStubInterface, args [
 //args[1] : ref of the order
 //args[3] : key of the carrier
 
-func (t *SimpleChaincode) setTransport(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) setTransport(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	if len(args) != 3 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 3")
+		return shim.Error("Incorrect number of arguments. Expecting 3")
 	}
 
 	fmt.Println("args[0] : " + args[0])
@@ -563,7 +554,7 @@ func (t *SimpleChaincode) setTransport(stub shim.ChaincodeStubInterface, args []
 
 	orderAsBytes, index, err := t.getOrderByRef(stub, arguments)
 	if err != nil {
-		return nil, errors.New(err.Error())
+		return shim.Error(err.Error())
 	}
 	fmt.Print("orderAsBytes: ")
 	fmt.Println(orderAsBytes)
@@ -589,16 +580,16 @@ func (t *SimpleChaincode) setTransport(stub shim.ChaincodeStubInterface, args []
 	fmt.Print("PutState: ")
 	fmt.Println(err)
 
-	return nil, nil
+	return shim.Success(nil)
 }
 
 /************************Change the statut of an order****************************************/
 //args[0] : state value
 //args[1] : ref of the order
 
-func (t *SimpleChaincode) setState(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) setState(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	if len(args) != 2 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 2")
+		return shim.Error("Incorrect number of arguments. Expecting 2")
 	}
 
 	fmt.Println("args[0] : " + args[0])
@@ -613,7 +604,7 @@ func (t *SimpleChaincode) setState(stub shim.ChaincodeStubInterface, args []stri
 
 	orderAsBytes, index, err := t.getOrderByRef(stub, arguments)
 	if err != nil {
-		return nil, errors.New(err.Error())
+		return shim.Error(err.Error())
 	}
 	fmt.Print("orderAsBytes: ")
 	fmt.Println(orderAsBytes)
@@ -638,7 +629,7 @@ func (t *SimpleChaincode) setState(stub shim.ChaincodeStubInterface, args []stri
 	fmt.Print("PutState: ")
 	fmt.Println(err)
 
-	return nil, nil
+	return shim.Success(nil)
 }
 
 /*************************Add a user to the state*************************************/
@@ -646,9 +637,9 @@ func (t *SimpleChaincode) setState(stub shim.ChaincodeStubInterface, args []stri
 //args[1] : user password
 //args[2] : user hash
 
-func (t *SimpleChaincode) addUser(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) addUser(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	if len(args) != 3 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 3")
+		return shim.Error("Incorrect number of arguments. Expecting 3")
 	}
 
 	fmt.Println("args[0] : " + args[0])
@@ -678,5 +669,5 @@ func (t *SimpleChaincode) addUser(stub shim.ChaincodeStubInterface, args []strin
 	fmt.Print("PutState: ")
 	fmt.Println(err)
 
-	return nil, nil
+	return shim.Success(nil)
 }
